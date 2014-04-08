@@ -2,6 +2,10 @@ declare -a all_baseFile=(m1_100 m1_500 m1_1000 m2_100 m2_500 m2_1000 uniform_20_
 
 type=training
 
+mkdir -p jobs
+cd jobs
+rm -f job*
+
 for baseFile in ${all_baseFile[@]}
 do
     for noiseProb in $(seq 0 0.1 1)
