@@ -129,6 +129,7 @@ def parse_parameters(sparm):
     global NOISE_LEVEL
     # set default values
     LOSS_METHOD = "micro"
+
     for i in xrange(0,len(sparm.argv)/2):
         #print i,  len(sparm.argv)/2
         opt = temp_arg_list.pop(0)
@@ -144,7 +145,7 @@ def parse_parameters(sparm):
         if(opt == "--nodeonly"):
             NODEONLY = val
         if(opt == "--noise"):
-            NOISE_LEVEL = val
+            NOISE_LEVEL = float(val)
 
 
 
@@ -181,12 +182,20 @@ def read_examples(filename,sparm):
 
 
 def read_examples_multiple_frames(filename,sparm):
+
+    ######
+    global save_model_to_file
+    global NOISE_LEVEL
+    save_model_to_file = filename[:-4] + "_" + `NOISE_LEVEL`
+    print "filename=",save_model_to_file
+    ######
+
     global TEMPORAL
     global NUM_CLASSES
     global NUM_CLASSES_OBJ
     global NUM_CLASSES_SKEL
     global NODEONLY
-    global NOISE_LEVEL
+
      # Helper function for reading from files.
     def line_reader(lines):
         # returns only non-empty lines
@@ -370,7 +379,7 @@ def read_examples_multiple_frames(filename,sparm):
 
                 #####
                 rand_flip = random.random()
-                #print "NOISE=",NOISE_LEVEL
+                print NOISE_LEVEL
                 if (prevLabel != -1) and (rand_flip < NOISE_LEVEL) and (target != prevLabel) :
                     # flip labels
                     #print "rand_flip=",rand_flip
@@ -2648,7 +2657,8 @@ def print_iteration_stats(ceps, cached_constraint, sample, sm,
     global ITER
     ITER += 1;
     if(ITER%100 == 0):
-        filename = "imodels/model.c"+ `sparm.c`  + ".m" + `ITER`;
+        global save_model_to_file
+        filename = "imodels/model_"+ save_model_to_file  + "_iter" + `ITER`;
         print "writing intermediate model: ", filename
         write_model(filename, sm, sparm)
     # #printig the weight vector
