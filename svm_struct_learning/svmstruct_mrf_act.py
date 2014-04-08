@@ -379,7 +379,7 @@ def read_examples_multiple_frames(filename,sparm):
 
                 #####
                 rand_flip = random.random()
-                print NOISE_LEVEL
+                #print NOISE_LEVEL
                 if (prevLabel != -1) and (rand_flip < NOISE_LEVEL) and (target != prevLabel) :
                     # flip labels
                     #print "rand_flip=",rand_flip
