@@ -90,7 +90,7 @@ def get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objM
         crow[index] = l
         ccol[index] = l
         index = index + 1
-    
+
     objCnt = -1
     for o in objMapList:
         objCnt +=1;
@@ -101,7 +101,7 @@ def get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objM
                     crow[index] = num_ass_edge_feats*(partialSums[objCnt] + pl*num_parts + pk) + i + num_node_feats*K
                     #print pl , pl , num_parts, partialSums[objCnt], objCnt, crow[index]
                     assert crow[index] < num_ones
-                    
+
                     ccol[index] = num_edge_feats*( (int(o[pl])-1)*K+ (int(o[pk])-1) ) + i +  num_node_feats*K
                     index += 1
 
@@ -109,12 +109,12 @@ def get_C_obj_matrix(num_node_feats, num_edge_feats, num_ass_edge_feats, K, objM
         for k in xrange(0, K):
             for i in xrange(0,num_nonass_edge_feats):
                 crow[index] =   num_node_feats*K+ (num_ass_edge_feats*num_ass_terms + num_nonass_edge_feats*(l*K+k)+i )
-                
+
                 assert crow[index] < num_ones
                 ccol[index] =   num_node_feats*K+ (num_edge_feats*(l*K+k) + num_ass_edge_feats + i)
                 index +=1
 
-    
+
 
     C = csr_matrix((cval,(crow,ccol)),shape=(num_node_feats*K + num_ass_edge_feats*num_ass_terms + num_nonass_edge_feats*K*K , num_node_feats*K + (num_edge_feats*K*K)),dtype='d')
     return C
@@ -126,6 +126,7 @@ def parse_parameters(sparm):
     global SINGLE_FRAME
     global TEMPORAL
     global NODEONLY
+    global NOISE_LEVEL
     # set default values
     LOSS_METHOD = "micro"
     for i in xrange(0,len(sparm.argv)/2):
@@ -142,15 +143,21 @@ def parse_parameters(sparm):
             TEMPORAL= val
         if(opt == "--nodeonly"):
             NODEONLY = val
+        if(opt == "--noise"):
+            NOISE_LEVEL = val
 
 
 
 def parse_parameters_classify(attribute, value):
-    
+
     global LOSS_METHOD
     global SINGLE_FRAME
     global TEMPORAL
     global NODEONLY
+    global NOISE_LEVEL
+
+    NOISE_LEVEL = 0
+
     # set default values
     #print attribute, value
     if(attribute == "--l"):
@@ -179,6 +186,7 @@ def read_examples_multiple_frames(filename,sparm):
     global NUM_CLASSES_OBJ
     global NUM_CLASSES_SKEL
     global NODEONLY
+    global NOISE_LEVEL
      # Helper function for reading from files.
     def line_reader(lines):
         # returns only non-empty lines
@@ -205,11 +213,11 @@ def read_examples_multiple_frames(filename,sparm):
     # Open the file and read each example.
     for input_file in file(filename):
         files = [line.split() for line in line_reader(file(input_file.strip()))]
-        print files
-        print input_file
+        #print files
+        #print input_file
         for frame_num in xrange(1,int(files[0][0].strip())):
             frame_file = files[frame_num][0].strip()
-            print frame_file
+            #print frame_file
             input = [line.split() for line in line_reader(file(frame_file.strip()))]
         # first line has the number of nodes and number of edges
             N1 = int(input[0][0].strip())
@@ -245,7 +253,7 @@ def read_examples_multiple_frames(filename,sparm):
         if(TEMPORAL == "true"):
             for edge_num in xrange(1+int(files[0][0].strip()),1+int(files[0][0].strip())+int(files[0][1].strip())):
                 edge_file = files[edge_num][0].strip()
-                print edge_file
+                #print edge_file
                 input = [line.split() for line in line_reader(file(edge_file.strip()))]
                 E3 = int(input[0][0].strip())
                 E4 = int(input[0][1].strip())
@@ -296,7 +304,7 @@ def read_examples_multiple_frames(filename,sparm):
     example_num=-1
     for input_file in file(filename):
         files = [line.split() for line in line_reader(file(input_file.strip()))]
-        print input_file
+        #print input_file
         X_multiple = []
         Y_multiple = []
         X_temporal = []
@@ -309,9 +317,10 @@ def read_examples_multiple_frames(filename,sparm):
         N1_list = []
         E_list = []
         example_num+=1
+        prevLabel = -1
         for frame_num in xrange(1,int(files[0][0].strip())+1):
             frame_file = files[frame_num][0].strip()
-            print frame_file
+            #print frame_file
             frame_count +=1
             input = [line.split() for line in line_reader(file(frame_file.strip()))]
             # first line has the number of nodes and number of edges
@@ -358,7 +367,27 @@ def read_examples_multiple_frames(filename,sparm):
             #skel nodes
             for i in xrange(0, N2):
                 target = int(input[N1+i+1][0]);
-                print target
+
+                #####
+                rand_flip = random.random()
+                #print "NOISE=",NOISE_LEVEL
+                if (prevLabel != -1) and (rand_flip < NOISE_LEVEL) and (target != prevLabel) :
+                    # flip labels
+                    #print "rand_flip=",rand_flip
+                    #print "prevTarget=",prevLabel
+                    #print "oriTarget=",target
+                    temp = target
+                    target = prevLabel
+                    prevLabel = temp
+                    #print "newTarget=",target
+                else:
+                    # else do nothing
+                    prevLabel = target
+                #####
+
+                #print target
+
+
                 if(target != -1): # if the segment is unlabeled all entries of Yn for the label will be 0
                     Yn[N1*max_obj_target + i*max_skel_target+(target-1),0]=1
 
@@ -441,7 +470,7 @@ def read_examples_multiple_frames(filename,sparm):
             E_list.append((E1,E2))
             obj_map_list.append(obj_map)
             frame_map[FN] = frame_count-1 # 0 indexed
-            print frame_map
+            #print frame_map
             #print FN, obj_map
 
             Y_s = csr_matrix(Y,dtype='d')
@@ -465,7 +494,7 @@ def read_examples_multiple_frames(filename,sparm):
             edges_obj_temporal_list = []
             for edge_num in xrange(1+int(files[0][0].strip()),1+int(files[0][0].strip())+int(files[0][1].strip())):
                 edge_file = files[edge_num][0].strip()
-                print edge_file
+                #print edge_file
                 temporal_edge_count += 1
                 input = [line.split() for line in line_reader(file(edge_file.strip()))]
                 # first line has the number of nodes and number of edges
@@ -490,7 +519,7 @@ def read_examples_multiple_frames(filename,sparm):
                     # get the segment numbers
                     #print frame_map[FN2],obj_map_list[frame_map[FN2]]
                     edges_obj_temporal[i,0]= obj_map_list[frame_map[FN2]][int(input[i+1][2])]
-                    
+
 
                     tokens = [line.split(':') for line in input[i+1][3:]]
                     features = mat([float(v) for k,v in tokens])
@@ -508,7 +537,7 @@ def read_examples_multiple_frames(filename,sparm):
                     target2 = int(input[i+1][1]);
                     if(target1 != -1 and target2 != -1): # both should be labeled to add to Ye
                         Ye4[(i-E3)*max_skel_target*max_skel_target + (target1-1)*max_skel_target+(target2-1)]=1
-                    
+
                     #edges_skel_temporal[i-E3,0]= 1 # only one subactivity node
 
                     tokens = [line.split(':') for line in input[i+1][3:]]
@@ -696,10 +725,10 @@ def read_examples_single_frame(filename,sparm):
         #skel nodes
         for i in xrange(0, N2):
             target = int(input[N1+i+1][0]);
-            
+
             if(target != -1): # if the segment is unlabeled all entries of Yn for the label will be 0
                 Yn[N1*max_obj_target + i*max_skel_target+(target-1),0]=1
-           
+
             # Get the features.
             tokens = [line.split(':') for line in input[N1+i+1][2:]]
 
@@ -801,7 +830,7 @@ def read_examples_single_frame(filename,sparm):
     # #print out some very useful statistics.
     print len(examples),'examples read'
     return examples
-    
+
 
 def get_index(edges,u,v):
     for i in xrange(0,edges.shape[0]):
@@ -860,20 +889,20 @@ def lp_inference_sum1_IP(X,sm,sparm,LE):
         if (c.index < N1*K1):
             c.name = 'y_obj_%d_%d' % ( c.index/K1 , (c.index%K1)+1) # Name them y_obj_0_1, etc
             c.kind=int
-            
+
         elif((c.index - N1*K1) < N2*K2) :
             index = c.index  - N1*K1
             c.name = 'y_skel_%d_%d' % ( index/K2 , (index%K2) + 1 ) # name them y_skel_0_1 etc
             c.kind = int
-            
+
         elif((c.index - N1*K1 - N2*K2) < K1*K1*E1):
             index = c.index - N1*K1 - N2*K2
             c.name = 'y_%d-%d_%d-%d' % ( edges_obj_obj[int(index/(K1*K1)),0] ,edges_obj_obj[int(index/(K1*K1)),1] , int((index%(K1*K1))/K1)+1 , int((index%(K1*K1))%K1)+1)
-            
+
         else :
             index = c.index - N1*K1 - N2*K2 - K1*K1*E1
             c.name = 'y_%d-%d_%d-%d' % ( edges_obj_skel[int(index/(K1*K2)),0] ,edges_obj_skel[int(index/(K1*K2)),1] , int((index%(K1*K2))/K2)+1 , int((index%(K1*K2))%K2)+1)
-           
+
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
         #count_t +=1
     #print count_t,X[0].shape[1]
@@ -883,10 +912,10 @@ def lp_inference_sum1_IP(X,sm,sparm,LE):
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
     ##print w_list
     ##print (asarray(w*x)[0]).tolist()
-    
+
     #print w_mat.transpose().shape[1];
 
-    lp.obj[:] = (asarray((w_mat*x).todense())[0]).tolist() 
+    lp.obj[:] = (asarray((w_mat*x).todense())[0]).tolist()
     ##print lp.obj[:]
 
     lp.rows.add(3*E1*K1*K1+3*E2*K1*K2+N1+N2)
@@ -963,7 +992,7 @@ def lp_inference_sum1_IP(X,sm,sparm,LE):
         for i in xrange(0,K2):
             c = K1*N1+ e*K2+i
             t.append((r,c,1))
-    
+
 
     ##print len(t)
     lp.matrix = t
@@ -1050,20 +1079,20 @@ def lp_training(X,Y,sm,sparm):
         if (c.index < N1*K1):
             c.name = 'y_obj_%d_%d' % ( c.index/K1 , (c.index%K1)+1) # Name them y_obj_0_1, etc
             c.kind=int
-            
+
         elif((c.index - N1*K1) < N2*K2) :
             index = c.index  - N1*K1
             c.name = 'y_skel_%d_%d' % ( index/K2 , (index%K2) + 1 ) # name them y_skel_0_1 etc
             c.kind = int
-            
+
         elif((c.index - N1*K1 - N2*K2) < K1*K1*E1):
             index = c.index - N1*K1 - N2*K2
             c.name = 'y_%d-%d_%d-%d' % ( edges_obj_obj[int(index/(K1*K1)),0] ,edges_obj_obj[int(index/(K1*K1)),1] , int((index%(K1*K1))/K1)+1 , int((index%(K1*K1))%K1)+1)
-            
+
         else :
             index = c.index - N1*K1 - N2*K2 - K1*K1*E1
             c.name = 'y_%d-%d_%d-%d' % ( edges_obj_skel[int(index/(K1*K2)),0] ,edges_obj_skel[int(index/(K1*K2)),1] , int((index%(K1*K2))/K2)+1 , int((index%(K1*K2))%K2)+1)
-            
+
         c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
         #count_t +=1
     #print count_t,X[0].shape[1]
@@ -1073,7 +1102,7 @@ def lp_training(X,Y,sm,sparm):
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
     ##print w_list
     ##print (asarray(w*x)[0]).tolist()
-   
+
     #print w_mat.transpose().shape[1];
 
    # lp.obj[:] = (asarray((w_mat.transpose()*x).todense())[0]).tolist() ##!!!!!!!!!!!! why did this work without transpose before ?
@@ -1082,7 +1111,7 @@ def lp_training(X,Y,sm,sparm):
 
 
     coeff_list = (asarray((w_mat*x).todense())[0]).tolist()
-    
+
     for index in xrange(0,N1*K1):
         if(y[index,0] == 1):
             coeff_list[index] = coeff_list[index]-(1.0/(N1*K1))
@@ -1164,7 +1193,7 @@ def lp_training(X,Y,sm,sparm):
     labeling = asmatrix(array([c.primal for c in lp.cols]))
     ##print labeling.T.shape[0],labeling.T.shape[1]
     ymax = (csr_matrix(labeling.T,dtype='d'),N1,E1)
-    
+
     c1 = 0
     c0= 0
     ch =0
@@ -1183,7 +1212,7 @@ def lp_training(X,Y,sm,sparm):
     #print 'number of 0s: %d' % c0
     #print 'number of 0.5s: %d' % ch
     #print 'number of 0s: %d' % cr
-   
+
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
     #print "score:" ,score
     #print "objective value= ", (lp.obj.value)
@@ -1314,7 +1343,7 @@ def lp_training_temporal_qpbo(X,Y,sm,sparm):
             E4 =  0
         for index in xrange(0,E3*K1*K1):
             u = edges_obj_temporal[int(index/(K1*K1)),0]
-            
+
             l = int((index%(K1*K1))/K1)
             k = int((index%(K1*K1))%K1)
 
@@ -1324,14 +1353,14 @@ def lp_training_temporal_qpbo(X,Y,sm,sparm):
 
         for index in xrange(0,E4*K2*K2):
             u = 0 # only one sub activity node
-            
+
             l = int((index%(K2*K2))/K2)
             k = int((index%(K2*K2))%K2)
 
             n1 = int(N1*K1+ u*K2 + l) + node_index_jump_map[F1]
             n2 = int(N1*K1+ u*K2 + k) + node_index_jump_map[F2]
             qpbo.add_term(n1,n2,0,0,0,-coeff_list[index+E3*K1*K1 + index_jump])
-        
+
         index_jump+= E3*K1*K1 + E4*K2*K2
         ##print lp.obj[:]
     qpbo.solve();
@@ -1489,9 +1518,9 @@ def lp_training_multiple_frames_qpbo(X,Y,sm,sparm):
 
     w_mat = csr_matrix(asmatrix(array(w_list)),dtype='d')
     ##print (asarray(w*x)[0]).tolist()
-    
+
     coeff_list = (asarray((w_mat*x).todense())[0]).tolist()
-    
+
     qpbo_edges = 0
     qpbo_nodes = 0
     for f_index in xrange(0,num_frame):
@@ -1669,12 +1698,12 @@ def lp_inference_multiple_frames_sum1_IP(X,sm,sparm,LE):
     num_frames = X[5]
     num_temporal_edges = X[8]
     obj_map_list = X[10]
-    
+
 
   #  print X[3],X[4]
 
     w = sm.w
-    
+
     x = X[0]
     N1_list = X[3]
     E1_list = X[4]
@@ -1742,7 +1771,7 @@ def lp_inference_multiple_frames_sum1_IP(X,sm,sparm,LE):
                 c.name = 'y_%d_%d-%d_%d-%d' % ( f_index, edges_obj_skel[int(index/(K1*K2)),0] ,edges_obj_skel[int(index/(K1*K2)),1] , int((index%(K1*K2))/K2)+1 , int((index%(K1*K2))%K2)+1)
 
             c.bounds = 0.0, 1.0    # Set bound 0 <= xi <= 1
-       
+
         for i in xrange(row_index_jump, row_index_jump + 2*E1*K1*K1):
             lp.rows[i].bounds = 0, None
         for i in xrange(row_index_jump + 2*E1*K1*K1, row_index_jump + 3*E1*K1*K1):
@@ -2224,7 +2253,7 @@ def lp_training_qpbo(X,Y,sm,sparm):
             else:
                 coeff_list[index_n*K1+index_k] = coeff_list[index_n*K1+index_k]+(1.0/(N1*K1))
     for index_n in xrange(0,N2):
-        
+
         for index_k in xrange(0,K2):
             if(y[N1*K1+index_n*K2+index_k,0] == 1):
                 coeff_list[N1*K1+index_n*K2+index_k] = coeff_list[N1*K1+index_n*K2+index_k]-(1.0/(N2*K2))
@@ -2307,7 +2336,7 @@ def lp_training_qpbo(X,Y,sm,sparm):
     c1 = 0
     c0= 0
     ch =0
-    
+
     for c in labellist:
         if (c == 1):
             c1 += 1
@@ -2319,14 +2348,14 @@ def lp_training_qpbo(X,Y,sm,sparm):
     #print 'number of 1s: %d' % c1
     #print 'number of 0s: %d' % c0
     #print 'number of 0.5s: %d' % ch
-    
+
     score = asarray((w_mat*x*ymax[0]).todense())[0][0];
 
     #print "objective value w/ const= ", (lp.obj.value+(1.0/K))
     #print 'score : ' , round(score+loss(Y,ymax,sparm),2)
     #print 'loss: ',loss(Y,ymax,sparm)
     #print '\n'
-    
+
     #assert (round(lp.obj.value+(1.0/K),2) ==  round(score+loss(Y,ymax,sparm),2))
     return ymax
 
@@ -2354,13 +2383,13 @@ def classify_example(x, sm, sparm):
         l = lp_inference_multiple_frames_sum1_IP(x, sm, sparm, False)
     else:
         l = lp_inference_temporal_sum1_IP(x, sm, sparm, False)
-   
+
     return l
 
 def areEqualVectors(V1,V2):
     for i in xrange(0,V1.shape[0]):
         assert(round(V1[i,0]*2, 0)==round(V2[i,0]*2, 0))
-        
+
 def find_most_violated_constraint(x, y, sm, sparm):
     """Returns the most violated constraint for example (x,y)."""
     # Similar, but include the loss.
@@ -2374,11 +2403,11 @@ def find_most_violated_constraint(x, y, sm, sparm):
     else:
         l1 = lp_training_temporal_qpbo(x, y, sm, sparm)
     #l1 = lp_training(x,y,sm,sparm)
-    
+
     return l1
 
 def psi(x, y, sm, sparm):
-    
+
     """Returns the combined feature vector Psi(x,y)."""
     # Return the product of x and y
 
@@ -2395,7 +2424,7 @@ def psi(x, y, sm, sparm):
     #fin2 = time.clock()
     #print "Time for psi:", (fin2-fin1)
     return a
-    
+
 def loss(Y, Ybar, sparm):
     #global LOSS_METHOD
     global SINGLE_FRAME
@@ -2417,14 +2446,14 @@ def loss_micro(Y, Ybar, sparm):
     N1 = Y[1]
     E1 = Y[2]
     y= Y[0]
-    
+
     #print "N:",N," K: ", K #,y.shape[0],y.shape[1]
     ybar = Ybar[0]
-    
+
     yDiff=y- ybar;
     sum=0.0;
     size=N1*K1 + N2*K2
-    
+
 
     for index_n in xrange(0,N1):
         for index_k in xrange(0,K1):
@@ -2597,7 +2626,7 @@ def write_label(fileptr, y):
                         maxlabelList.append(label)
                 maxlabel =  maxlabelList[random.randint(0,len(maxlabelList))]
                 s += repr(node+1)+':'+repr(maxlabel+1)+':'+repr(maxscore)
-                        
+
             s+=";"
             index_jump += N1*K1+N2*K2+ E1*K1*K1 + E2*K1*K2
         print>>fileptr,s,
@@ -2613,9 +2642,9 @@ def print_iteration_stats(ceps, cached_constraint, sample, sm,
     how much the most violated constraint was violated by.  The
     'cached_constraint' argument is true if this constraint was
     constructed from the cache.
-    
+
     The default behavior is that nothing is #printed."""
-    # for every 10th iteration save the model file 
+    # for every 10th iteration save the model file
     global ITER
     ITER += 1;
     if(ITER%100 == 0):
@@ -2694,8 +2723,8 @@ def evaluation_class_pr_sum1(Y,Ybar,K,N,sparm):
             if(actualClass==prediction):
                 tpcount[prediction,0] += 1
                 flag = 1;
-				
-        print>>f, node+1,flag         
+
+        print>>f, node+1,flag
     print>>f, "\n"
     for label in xrange(0,K):
         if(singlepredcount[label,0] != 0):
@@ -2717,13 +2746,13 @@ def evaluation_prec_recall(Y, Ybar, K, N ,sparm):
             tp_fn += y[node*K+label,0]*y[node*K+label,0]
             tp_fp += ybar[node*K+label,0]*ybar[node*K+label,0]
             tp += y[node*K+label,0]*ybar[node*K+label,0]
-        
+
         if( tp_fp > 0):
-            prec += tp/tp_fp; 
+            prec += tp/tp_fp;
         else:
             prec += 0;
         if( tp_fn > 0):
-            recall += tp/tp_fn; 
+            recall += tp/tp_fn;
         else:
             recall += 0;
 
@@ -2747,9 +2776,9 @@ def eval_prediction(exnum, (x, y), ypred, sm, sparm, teststats):
     On the first call, that is, when exnum==0, teststats==None.  The
     default behavior is that the function does nothing."""
     global SINGLE_FRAME
-    
+
     if exnum==0: teststats = []
-    
+
     if(SINGLE_FRAME == "true"):
         teststats = eval_prediction_single_frame(exnum, (x, y), ypred, sm, sparm, teststats)
     else:
@@ -2771,7 +2800,7 @@ def eval_prediction_single_frame(exnum, (x, y), ypred, sm, sparm, teststats):
 
     ypred_obj = ypred[0][0:N1*NUM_CLASSES_OBJ]
     ypred_skel = ypred[0][N1*NUM_CLASSES_OBJ:N1*NUM_CLASSES_OBJ+N2*NUM_CLASSES_SKEL]
-    
+
     obj_res = evaluation_class_pr_sum1(y_obj, ypred_obj, NUM_CLASSES_OBJ , N1, sparm)
     skel_res = evaluation_class_pr_sum1(y_skel, ypred_skel, NUM_CLASSES_SKEL , N2, sparm)
     teststats.append((obj_res,skel_res))
@@ -2788,7 +2817,7 @@ def eval_prediction_multi_frame(exnum, (x, y), ypred, sm, sparm, teststats):
     K2 = NUM_CLASSES_SKEL
     index_jump =0
     for f_index in xrange(0,num_frames):
-        
+
         N1 = y[1][f_index]
         N2 = 1
         if(NODEONLY == "true"):
