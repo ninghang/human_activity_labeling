@@ -9,7 +9,7 @@ do
         for i in {1..4}
         do
             trainingList=$type\_$baseFile\_cv$i.txt
-            model=model\_$baseFile\_cv$i\_$noiseProb.txt
+            model=model\_$baseFile\_cv$i\_$noiseProb
             echo ./svm_python_learn --m svmstruct_mrf_act -c 0.1  -e 0.01 -w 3 --sf false --noise $noiseProb --temporal true $trainingList $model
         done
     done
