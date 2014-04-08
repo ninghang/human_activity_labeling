@@ -588,8 +588,8 @@ def read_examples_multiple_frames(filename,sparm):
         #xd =  X_multiple.todense()
         #numpy.savetxt('matrixX.txt',xd,delimiter=' ',fmt='%-2.1f')
         #numpy.savetxt('matrixY.txt',Y_multiple,delimiter=' ',fmt='%-2.1f')
-        print Y_m_s.shape
-        print X_multiple.shape
+        #print Y_m_s.shape
+        #print X_multiple.shape
 
         examples.append(((X_multiple, edges_obj_obj_list, edges_obj_skel_list, N1_list, E_list, frame_count, edges_obj_temporal_list, temporal_frames_list, temporal_edge_count,  example_num,obj_map_list ), (Y_m_s,N1_list,E_list,frame_count,temporal_edge_count,obj_map_list)))
 
