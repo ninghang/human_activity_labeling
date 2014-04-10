@@ -824,9 +824,9 @@ def read_examples_single_frame(filename,sparm):
         #print Y
         xd =  X_sparse.todense()
 
-        global save_model_to_file
-        testfile = "results/t" + save_model_to_file + ".txt"
-        numpy.savetxt(testfile,xd,delimiter=' ',fmt='%-2.1f')
+        #global save_model_to_file
+        #testfile = "results/t" + save_model_to_file + ".txt"
+        #numpy.savetxt(testfile,xd,delimiter=' ',fmt='%-2.1f')
         #X_s = csr_matrix(X,dtype='d')
         #print sum(X_s.todense() - X_sparse.todense())
         #assert (sum(X_s.todense() - X_sparse.todense()) == 0)
