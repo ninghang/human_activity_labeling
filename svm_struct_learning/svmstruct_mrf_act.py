@@ -824,7 +824,9 @@ def read_examples_single_frame(filename,sparm):
         #print Y
         xd =  X_sparse.todense()
 
-        numpy.savetxt('test.txt',xd,delimiter=' ',fmt='%-2.1f')
+        global save_model_to_file
+        testfile = "results/t" + save_model_to_file + ".txt"
+        numpy.savetxt(testfile,xd,delimiter=' ',fmt='%-2.1f')
         #X_s = csr_matrix(X,dtype='d')
         #print sum(X_s.todense() - X_sparse.todense())
         #assert (sum(X_s.todense() - X_sparse.todense()) == 0)
@@ -2692,7 +2694,10 @@ def evaluation_class_pr_sum1(Y,Ybar,K,N,sparm):
     zeroClasses=zeros((K,1))
     prec = zeros((K,1))
     recall = zeros((K,1))
-    f = open('pred.txt','a')
+
+    global save_model_to_file
+    filesave = "results/pred" + save_model_to_file + ".txt"
+    f = open(filesave,'a')
     print y,ybar
     for node in xrange(0,N):
         flag = 0;
@@ -2894,15 +2899,22 @@ def print_testing_stats_objects( K, teststats):
         total_tc +=  truecount[label,0]
         total_pc += singlepredcount[label,0]
         total_tp += tpcount[label,0]
-    print "prec: ", total_tp/total_pc , "recall: ",total_tp/total_tc ,"tp: ", total_tp, " pc: ", total_pc, "tc: ", total_tc
+    global save_model_to_file
+    ff = open("results/precrecall"+save_model_to_file+".txt","w")
+    print >> ff, "prec: ", total_tp/total_pc , " recall: ",total_tp/total_tc ," tp: ", total_tp, " pc: ", total_pc, " tc: ", total_tc
+    ff.close()
+
     #print "Error per Test example: ", teststats
     print "confusion matrix:"
     print aggConfusionMatrix;
-    savetxt('conf.txt',aggConfusionMatrix,fmt='%d');
+
+    conffile = "results/conf" + save_model_to_file + ".txt"
+    savetxt(conffile,aggConfusionMatrix,fmt='%d');
 
     print "confusion matrix with multiple semantics:"
     print aggConfusionMatrixWMultiple;
-    savetxt('confm.txt',aggConfusionMatrixWMultiple,fmt='%d');
+    confmfile = "confm" + save_model_to_file + ".txt"
+    savetxt(confmfile,aggConfusionMatrixWMultiple,fmt='%d');
 
     print "num Zeros:"
     print aggZeroPreds;
