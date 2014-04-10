@@ -2656,11 +2656,14 @@ def print_iteration_stats(ceps, cached_constraint, sample, sm,
     # for every 10th iteration save the model file
     global ITER
     ITER += 1;
-    if(ITER%100 == 0):
-        global save_model_to_file
-        filename = "imodels/model_"+ save_model_to_file  + "_iter" + `ITER`;
-        print "writing intermediate model: ", filename
-        write_model(filename, sm, sparm)
+
+    #### do not write intermediate model, takes too much space...
+    #if(ITER%100 == 0):
+    #    global save_model_to_file
+    #    filename = "imodels/model_"+ save_model_to_file  + "_iter" + `ITER`;
+    #    print "writing intermediate model: ", filename
+    #    write_model(filename, sm, sparm)
+
     # #printig the weight vector
     #w_list = [sm.w[i] for i in xrange(0,sm.size_psi)]
     ##print w_list

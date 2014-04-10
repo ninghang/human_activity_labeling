@@ -10,7 +10,7 @@ for baseFile in ${all_baseFile[@]}
 do
     for noiseProb in $(seq 0 0.1 1)
     do
-        wt=50
+        wt=21
         jobfile=./job\_cv12\_$baseFile\_noise$noiseProb
         echo "#PBS -lnodes=1:ppn=8" > $jobfile
         echo "#PBS -lwalltime=$wt:00:00" >> $jobfile
@@ -23,7 +23,7 @@ do
         done
         echo "wait" >> $jobfile
 
-        wt=50
+        wt=21
         jobfile=./job\_cv34\_$baseFile\_noise$noiseProb
         echo "#PBS -lnodes=1:ppn=8" > $jobfile
         echo "#PBS -lwalltime=$wt:00:00" >> $jobfile
