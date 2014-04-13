@@ -2684,6 +2684,7 @@ def read_model(filename, sparm):
 def evaluation_class_pr_sum1(Y,Ybar,K,N,sparm):
     y = Y
     ybar = Ybar
+
     truecount = zeros((K,1))
     predcount = zeros((K,1))
     singlepredcount = zeros((K,1))
@@ -2834,6 +2835,13 @@ def eval_prediction_multi_frame(exnum, (x, y), ypred, sm, sparm, teststats):
     K1 = NUM_CLASSES_OBJ
     K2 = NUM_CLASSES_SKEL
     index_jump =0
+
+    global save_model_to_file
+    fileYbar = "results/predlabels" + save_model_to_file + ".txt"
+    fileY = "results/gtlabels" + save_model_to_file + ".txt"
+    fYbar = open(fileYbar,'a')
+    fY = open(fileY,'a')
+
     for f_index in xrange(0,num_frames):
 
         N1 = y[1][f_index]
@@ -2856,8 +2864,14 @@ def eval_prediction_multi_frame(exnum, (x, y), ypred, sm, sparm, teststats):
             obj_res = evaluation_class_pr_sum1(y_obj, ypred_obj, NUM_CLASSES_OBJ , N1, sparm)
         if(N2>0):
             skel_res = evaluation_class_pr_sum1(y_skel, ypred_skel, NUM_CLASSES_SKEL , N2, sparm)
+            print >> fYbar, sum(ypred_skel.nonzero())
+            print >> fY, sum(y_skel.nonzero())
         teststats.append((obj_res,skel_res))
         index_jump += N1*K1+N2*K2+ E1*K1*K1 + E2*K1*K2
+    print >> fYbar, "\n"
+    print >> fY, "\n"
+    fYbar.close()
+    fY.close()
     return teststats
 
 def print_testing_stats_objects( K, teststats):
