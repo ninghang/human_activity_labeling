@@ -20,7 +20,7 @@ do
             trainingList=$type\_$baseFile\_cv$i.txt
             model=model\_$baseFile\_cv$i\_$noiseProb
             pred=prec\_$baseFile\_cv$i\_$noiseProb
-            echo "./svm_python_classify --m svmstruct_mrf_act --sf false --temporal true $trainingList $model $pred &" >> $jobfile
+            echo "./svm_python_classify --m svmstruct_mrf_act --sf false --temporal true --nl $noiseProb $trainingList $model $pred &" >> $jobfile
         done
         echo "wait" >> $jobfile
 
@@ -34,7 +34,7 @@ do
             trainingList=$type\_$baseFile\_cv$i.txt
             model=model\_$baseFile\_cv$i\_$noiseProb
             pred=prec\_$baseFile\_cv$i\_$noiseProb
-            echo "./svm_python_classify --m svmstruct_mrf_act --sf false --temporal true $trainingList $model $pred &" >> $jobfile
+            echo "./svm_python_classify --m svmstruct_mrf_act --sf false --temporal true --nl $noiseProb $trainingList $model $pred &" >> $jobfile
         done
         echo "wait" >> $jobfile
 

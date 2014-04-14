@@ -159,6 +159,8 @@ def parse_parameters_classify(attribute, value):
 
     NOISE_LEVEL = 0
 
+    global OUTPUT_NOISE_LABEL
+
     # set default values
     #print attribute, value
     if(attribute == "--l"):
@@ -169,6 +171,8 @@ def parse_parameters_classify(attribute, value):
         TEMPORAL= value
     if(attribute == "--nodeonly"):
         NODEONLY= value
+    if(attribute == "--nl"):
+        OUTPUT_NOISE_LABEL = value
 
 
 def read_examples(filename,sparm):
@@ -185,9 +189,13 @@ def read_examples_multiple_frames(filename,sparm):
 
     ######
     global save_model_to_file
+    global save_model_to_file2
     global NOISE_LEVEL
+    global OUTPUT_NOISE_LABEL
     save_model_to_file = filename[:-4] + "_" + `NOISE_LEVEL`
+    save_model_to_file2 = filename[:-4] + "_" + OUTPUT_NOISE_LABEL
     print "filename=",save_model_to_file
+
     ######
 
     global TEMPORAL
@@ -2696,8 +2704,8 @@ def evaluation_class_pr_sum1(Y,Ybar,K,N,sparm):
     prec = zeros((K,1))
     recall = zeros((K,1))
 
-    global save_model_to_file
-    filesave = "results/pred" + save_model_to_file + ".txt"
+    global save_model_to_file2
+    filesave = "results/pred" + save_model_to_file2 + ".txt"
     f = open(filesave,'a')
     print y,ybar
     for node in xrange(0,N):
@@ -2836,9 +2844,9 @@ def eval_prediction_multi_frame(exnum, (x, y), ypred, sm, sparm, teststats):
     K2 = NUM_CLASSES_SKEL
     index_jump =0
 
-    global save_model_to_file
-    fileYbar = "results/predlabels" + save_model_to_file + ".txt"
-    fileY = "results/gtlabels" + save_model_to_file + ".txt"
+    global save_model_to_file2
+    fileYbar = "results/predlabels" + save_model_to_file2 + ".txt"
+    fileY = "results/gtlabels" + save_model_to_file2 + ".txt"
     fYbar = open(fileYbar,'a')
     fY = open(fileY,'a')
 
@@ -2913,8 +2921,8 @@ def print_testing_stats_objects( K, teststats):
         total_tc +=  truecount[label,0]
         total_pc += singlepredcount[label,0]
         total_tp += tpcount[label,0]
-    global save_model_to_file
-    ff = open("results/precrecall"+save_model_to_file+".txt","w")
+    global save_model_to_file2
+    ff = open("results/precrecall"+save_model_to_file2+".txt","w")
     print >> ff, "prec: ", total_tp/total_pc , " recall: ",total_tp/total_tc ," tp: ", total_tp, " pc: ", total_pc, " tc: ", total_tc
     ff.close()
 
@@ -2922,12 +2930,12 @@ def print_testing_stats_objects( K, teststats):
     print "confusion matrix:"
     print aggConfusionMatrix;
 
-    conffile = "results/conf" + save_model_to_file + ".txt"
+    conffile = "results/conf" + save_model_to_file2 + ".txt"
     savetxt(conffile,aggConfusionMatrix,fmt='%d');
 
     print "confusion matrix with multiple semantics:"
     print aggConfusionMatrixWMultiple;
-    confmfile = "confm" + save_model_to_file + ".txt"
+    confmfile = "confm" + save_model_to_file2 + ".txt"
     savetxt(confmfile,aggConfusionMatrixWMultiple,fmt='%d');
 
     print "num Zeros:"
